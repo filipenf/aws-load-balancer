@@ -1,0 +1,27 @@
+---
+- include: iam-roles.yml
+
+- include: lambda-function.yml
+
+- name: Create SNS topic
+  sns_topic:
+    name: "UpdateRoute53-SNS"
+    state: present
+    display_name: "Receive notifications from ASG lifecycle hooks"
+    region: "{{ region }}"
+    subscriptions:
+      - protocol: lambda
+        endpoint: arn:aws:lambda:{{region}}:{{ aws_account_id }}:function:UpdateRoute53
+
+- name: Grant permission for SNS to invoke lambda function
+  local_action: |
+    command aws lambda add-permission
+      --function-name UpdateRoute53
+      --statement-id "UpdateRoute53-SNS-{{region}}-perm"
+      --action "lambda:InvokeFunction"
+      --principal sns.amazonaws.com
+      --source-arn "arn:aws:sns:{{region}}:{{aws_account_id}}:UpdateRoute53-SNS"
+  register: result
+  failed_when:
+      result.rc != 0 and ("already exists" not in result.stderr)
+

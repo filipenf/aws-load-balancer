@@ -12,7 +12,7 @@ defaults
     mode                    tcp
     log                     global
     option                  tcplog
-    option                  http-server-close
+    option                  http-keep-alive
     option                  redispatch
     retries                 3
     timeout http-request    10s
@@ -27,25 +27,21 @@ defaults
 frontend http_frontend
     bind 0.0.0.0:80
     mode http
-{% for domain in loadbalancer.lb_mappings %}
-    acl {{ domain.name }}_acl_http hdr(host) -i {{ domain.domain }}
+{% for domain in lb_mappings %}
+    acl {{ domain.name }}_acl_http hdr(host) -m reg {{ domain.domain }}
     use_backend {{ domain.name }}_http if {{ domain.name }}_acl_http
 {% endfor %}
 
 frontend https_frontend
     bind 0.0.0.0:443
     mode tcp
-
-{% for domain in loadbalancer.lb_mappings %}
-    acl {{ domain.name }}_acl req.ssl_sni -m end {{ domain.domain }}
+{% for domain in lb_mappings %}
+    acl {{ domain.name }}_acl req.ssl_sni -m reg {{ domain.domain }}
     use_backend {{ domain.name }}_https if {{ domain.name }}_acl
 {% endfor %}
 
-    tcp-request inspect-delay 5s
-    tcp-request content reject if {% for domain in loadbalancer.lb_mappings %} !{{ domain.name }}_acl {% endfor %}
 
-
-{% for domain in loadbalancer.lb_mappings %}
+{% for domain in lb_mappings %}
 # {{ domain.name }}
 backend {{ domain.name }}_http
     mode http
@@ -79,3 +75,4 @@ listen stats 0.0.0.0:9999
     timeout server 30000
     stats uri /
     stats auth loadbalancer:loadbalancer
+

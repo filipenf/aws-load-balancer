@@ -1,0 +1,6 @@
+---
+branch: master
+ami: ami-6d1c2007
+instance_type: t2.micro
+max_size: 1
+min_size: 1

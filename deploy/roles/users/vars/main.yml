@@ -1,9 +1,0 @@
----
-
-active_users:
-  - { name: ffelisbino, uid: 1001 }
-
-# remove default user after real users were created
-inactive_users:
-  - name: centos
-  - name: ec2-user

@@ -1,0 +1,24 @@
+- hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars_prompt:
+    - name: aws_account_id
+      prompt: Please specify your aws account id
+      when: aws_account_id is undefined
+
+    - name: server_config
+      prompt: server configuration file name
+      when: server_config is undefined
+
+    - name: repository_name
+      prompt: name of the repository to clone
+      when: repository_name is undefined
+
+  pre_tasks:
+    - include_vars: "../vars/{{ server_config }}.yml"
+
+  roles:
+    - update-route53-from-lambda
+    - autoscaling
+

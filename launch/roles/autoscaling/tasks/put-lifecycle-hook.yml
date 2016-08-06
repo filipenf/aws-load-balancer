@@ -1,0 +1,21 @@
+- name: Add ASG lifecycle hook for scaling up
+  local_action: |
+    command aws autoscaling put-lifecycle-hook
+      --notification-metadata '{ "region": "{{ region }}" }'
+      --lifecycle-hook-name "{{ server_name }}-update-route53-up"
+      --auto-scaling-group-name "{{ server_name }}-asg"
+      --notification-target-arn "arn:aws:sns:{{ region }}:{{aws_account_id}}:UpdateRoute53-SNS"
+      --role-arn "arn:aws:iam::{{aws_account_id}}:role/UpdateRoute53-SNS-Role"
+      --lifecycle-transition "autoscaling:EC2_INSTANCE_LAUNCHING"
+      --heartbeat-timeout 60
+
+- name: Add ASG lifecycle hook for scaling down
+  local_action: |
+    command aws autoscaling put-lifecycle-hook
+      --notification-metadata '{ "region": "{{ region }}" }'
+      --lifecycle-hook-name "{{ server_name }}-update-route53-down"
+      --auto-scaling-group-name "{{ server_name }}-asg"
+      --notification-target-arn "arn:aws:sns:{{ region }}:{{aws_account_id}}:UpdateRoute53-SNS"
+      --role-arn "arn:aws:iam::{{aws_account_id}}:role/UpdateRoute53-SNS-Role"
+      --lifecycle-transition autoscaling:EC2_INSTANCE_TERMINATING
+      --heartbeat-timeout 60

@@ -1,0 +1,21 @@
+region: us-east-1
+security_group_rules:
+  - { proto: tcp, from_port: 443, to_port: 443, cidr_ip: 0.0.0.0/0 }
+  - { proto: tcp, from_port: 80, to_port: 80, cidr_ip: 0.0.0.0/0 }
+  - { proto: icmp, from_port: -1, to_port: -1, cidr_ip: 0.0.0.0/0 }
+
+domain_name: acme.com
+server_name: my-lb
+server_type: loadbalancer
+instance_type: t2.nano
+auto_register_domain: "loadbalancer.{{ domain_name }}"
+subnets: "subnet-f7e20b80,subnet-8e9992c8"
+repository_name: filipenf/aws-load-balancer
+
+lb_mappings:
+  - name: admin_area
+    domain: 'admin.{{ domain_name }}'
+    servers: [ '172.31.0.10', '172.31.0.11', '172.31.0.12' ]
+  - name: webmail_area
+    domain: 'webmail.{{ domain_name }}'
+    servers: [ '172.31.0.20', '172.31.0.21' ]

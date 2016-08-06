@@ -1,0 +1,16 @@
+---
+## this will work in ansible-pull mode so localhost is OK here
+- hosts: localhost
+  connection: local
+
+  pre_tasks:
+    - include_vars: "../vars/{{ server_config }}.yml"
+      tags: [always]
+
+    - name: Gather facts about this instance
+      action: ec2_facts
+
+  roles:
+    - role: "{{ server_type }}"
+      become: yes
+

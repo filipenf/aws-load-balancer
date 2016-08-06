@@ -1,0 +1,10 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [ {
+      "Effect": "Allow",
+      "Resource": "arn:aws:sns:{{region}}:{{aws_account_id}}:UpdateRoute53-SNS",
+      "Action": [
+        "sns:Publish"
+      ]
+  } ]
+}

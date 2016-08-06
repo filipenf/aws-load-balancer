@@ -1,0 +1,23 @@
+- name: create temporary zip file name
+  local_action: command mktemp -u
+  register: mktemp_result
+
+- name: zip lambda function to a temporary location
+  local_action: "command zip {{ mktemp_result.stdout }} update_route53.py"
+  args:
+    chdir: roles/update-route53-from-lambda/files/
+
+- name: Create lambda function
+  local_action:
+    module: lambda
+    name: 'UpdateRoute53'
+    state: present
+    zip_file: "{{ mktemp_result.stdout }}"
+    runtime: 'python2.7'
+    role_arn: 'arn:aws:iam::{{ aws_account_id }}:role/UpdateRoute53-Lambda-Role'
+    timeout: 30
+    handler: update_route53.lambda_handler
+
+- name: Delete temp zip file
+  local_action: file name="{{ mktemp_result.stdout }}" state=absent
+

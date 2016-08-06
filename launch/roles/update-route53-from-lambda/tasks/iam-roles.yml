@@ -1,0 +1,38 @@
+---
+- name: Create IAM role for sns publishing
+  iam:
+    iam_type: role
+    name: UpdateRoute53-SNS-Role
+    state: present
+    trust_policy: "{{ lookup('template', 'sns-trust-policy.json') }}"
+
+- name: attach inline policy to SNS role
+  iam_policy:
+    iam_type: role
+    iam_name: UpdateRoute53-SNS-Role
+    policy_name: UpdateRoute53-SNS-Policy
+    state: present
+    policy_json: "{{ lookup('template', 'sns-inline-policy.json') | to_json }}"
+
+- name: Create IAM role for the lambda function
+  iam:
+    iam_type: role
+    name: UpdateRoute53-Lambda-Role
+    state: present
+    trust_policy:
+      Version: '2012-10-17'
+      Statement:
+      - Action: 'sts:AssumeRole'
+        Effect: Allow
+        Principal:
+          Service: lambda.amazonaws.com
+
+- name: attach inline policy to lambda role
+  iam_policy:
+    iam_type: role
+    iam_name: UpdateRoute53-Lambda-Role
+    policy_name: UpdateRoute53-Lambda-Policy
+    state: present
+    policy_json: "{{ lookup('file', 'lambda-inline-policy.json') | from_json | to_json }}"
+
+

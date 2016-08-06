@@ -1,0 +1,24 @@
+#!/bin/bash -x
+
+echo "--> Installing base packages"
+yum -y install epel-release
+yum -y install python-paramiko python-yaml python-jinja2 python-simplejson python-pip git ansible
+pip install -U pip boto awscli
+
+export URL="https://github.com/"
+export REPO="{{ repository_name }}"
+export DEPLOY_PATH="deploy/deploy.yml"
+export PATH=/usr/bin:/usr/local/bin:$PATH
+
+attempts=3
+while [ $attempts -gt 0 ]; do
+    ansible-pull -i localhost, -c local -C {{ branch }} -e server_type={{ server_type }} \
+        -U "$URL/$REPO" -e server_config={{ server_config }} $DEPLOY_PATH
+    if [ $? -ne 0 ]; then
+        attempts=$(( $attempts - 1 ))
+        echo "Error deploying {{ server_type }}"
+    else
+       break
+    fi
+done;
+

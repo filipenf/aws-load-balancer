@@ -1,0 +1,61 @@
+---
+- name: create security group
+  local_action:
+    module: ec2_group
+    region: "{{ region }}"
+    name: loadbalancer-sg
+    description: security group for the load balancer
+    rules: "{{ security_group_rules }}"
+    rules_egress:
+      - { proto: -1, from_port: -1, to_port: -1, cidr_ip: 0.0.0.0/0 }
+  register: group_result
+
+- name: Create IAM role
+  local_action:
+    module: iam
+    iam_type: role
+    name: InstanceRole
+    state: present
+
+- name: Attach policy to the role
+  local_action:
+    module: iam_policy
+    iam_type: role
+    iam_name: InstanceRole
+    policy_name: InstancePolicy
+    state: present
+    policy_json: "{{ lookup('file', 'instance-policy.json') | from_json | to_json }}"
+
+- name: Create new launch configuration
+  local_action:
+    module: ec2_lc
+    image_id: "{{ ami }}"
+    instance_type: "{{ instance_type }}"
+    instance_profile_name: "InstanceRole"
+    key_name: "{{ key_name | default(omit) }}"
+    name: "{{ server_name }}-lc"
+    region: "{{ region }}"
+    security_groups: "{{ group_result.group_id }}"
+    volumes:
+      - device_name: /dev/sda1
+        delete_on_termination: yes
+        volume_size: 8
+    state: present
+    user_data: "{{ lookup('template', 'userdata.sh.j2') }}"
+
+- name: Create autoscaling group
+  local_action:
+    module: ec2_asg
+    launch_config_name: "{{ server_name }}-lc"
+    max_size: "{{ max_size }}"
+    min_size: "{{ min_size }}"
+    name: "{{ server_name }}-asg"
+    region: "{{ region }}"
+    availability_zones: "{{ availability_zones | default(omit) }}"
+    tags: "{{ asg_tags }}"
+    vpc_zone_identifier: "{{ subnets }}"
+  register: autoscaling_group
+
+- include: put-lifecycle-hook.yml
+  when: auto_register_domain is defined
+

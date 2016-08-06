@@ -1,0 +1,6 @@
+---
+asg_tags:
+  - Name: "{{ server_name }}"
+    propagate_at_launch: yes
+  - domain: "{{ auto_register_domain | default(omit) }}"
+    propagate_at_launch: yes
