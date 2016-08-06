@@ -1,0 +1,8 @@
+---
+- name: Delete user
+  user: name="{{ item.name }}" state=absent remove=yes
+
+- name: Delete user's group
+  group: name="{{ item.name }}" state=absent
+
+

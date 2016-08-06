@@ -1,0 +1,14 @@
+---
+## this will work in ansible-pull mode so localhost is OK here
+- hosts: localhost
+  connection: local
+
+  pre_tasks:
+    - include_vars: "../vars/{{ server_name }}.yml"
+      tags: [always]
+
+  roles:
+
+    - role: loadbalancer
+      become: yes
+

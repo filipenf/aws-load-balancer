@@ -1,0 +1,13 @@
+---
+- name: Create admin group
+  group: name=admin state=present
+
+- name: Add users to sudoers
+  lineinfile: dest=/etc/sudoers line='%admin ALL=(ALL) NOPASSWD:ALL'
+
+- include: create.yml
+  with_items: "{{ active_users }}"
+
+- include: delete.yml
+  with_items: '{{ inactive_users }}'
+

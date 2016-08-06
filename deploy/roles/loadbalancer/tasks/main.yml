@@ -1,0 +1,25 @@
+---
+- name: install haproxy package
+  yum: name=haproxy state=present
+
+- name: configure haproxy
+  template: src=haproxy-conf.j2 dest=/etc/haproxy/haproxy.cfg backup=yes
+  notify: restart haproxy
+
+- name: install peers scripts
+  copy: src="{{ item }}" dest="/usr/bin/{{ item }}" mode=0755
+  with_items:
+    - update-peers.sh
+    - generate-peers.sh
+
+- name: add crontab entry
+  cron: minute=*/3 job='/usr/bin/update-peers.sh' name="Update haproxy peer information"
+
+- name: update haproxy environment file
+  lineinfile: >
+    dest=/etc/sysconfig/haproxy
+    regexp="^OPTIONS=.*"
+    line="OPTIONS=-L {{ ansible_ec2_instance_id }} -f /etc/haproxy/peers.cfg"
+
+- name: make sure haproxy is enabled
+  service: name=haproxy state=started enabled=yes

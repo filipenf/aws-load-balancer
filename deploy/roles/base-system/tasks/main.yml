@@ -1,0 +1,21 @@
+---
+- name: install epel-release
+  yum: name=epel-release state=present
+
+- name: base system packages
+  yum: name="{{ item }}" state=present
+  with_items: "{{ base_packages }}"
+
+- name: install boto and awscli
+  pip: name="{{ item }}" state=present
+  with_items:
+    - boto
+    - awscli
+    - httplib2
+
+- name: Disable Selinux
+  selinux: state=disabled
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Change sudoers to allow sudo without tty
+  lineinfile: dest=/etc/sudoers regexp="^Defaults.*requiretty" line="Defaults !requiretty"

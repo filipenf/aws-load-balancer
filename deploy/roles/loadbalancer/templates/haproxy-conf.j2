@@ -1,0 +1,81 @@
+global
+    log         127.0.0.1 local2
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     {{ haproxy_maxconn }}
+    user        haproxy
+    group       haproxy
+    daemon
+    stats socket /var/lib/haproxy/stats
+
+defaults
+    mode                    tcp
+    log                     global
+    option                  tcplog
+    option                  http-server-close
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 10s
+    timeout check           10s
+    maxconn                 3000
+
+frontend http_frontend
+    bind 0.0.0.0:80
+    mode http
+{% for domain in loadbalancer.lb_mappings %}
+    acl {{ domain.name }}_acl_http hdr(host) -i {{ domain.domain }}
+    use_backend {{ domain.name }}_http if {{ domain.name }}_acl_http
+{% endfor %}
+
+frontend https_frontend
+    bind 0.0.0.0:443
+    mode tcp
+
+{% for domain in loadbalancer.lb_mappings %}
+    acl {{ domain.name }}_acl req.ssl_sni -m end {{ domain.domain }}
+    use_backend {{ domain.name }}_https if {{ domain.name }}_acl
+{% endfor %}
+
+    tcp-request inspect-delay 5s
+    tcp-request content reject if {% for domain in loadbalancer.lb_mappings %} !{{ domain.name }}_acl {% endfor %}
+
+
+{% for domain in loadbalancer.lb_mappings %}
+# {{ domain.name }}
+backend {{ domain.name }}_http
+    mode http
+    balance leastconn
+    stick on src table {{domain.name}}_https
+{% for server in domain.servers %}
+    server http_{{ domain.name }}_{{ loop.index }} {{ server }}:80 check
+{% endfor %}
+
+
+backend {{ domain.name }}_https
+    mode {{ domain.mode | default('tcp') }}
+    balance leastconn
+    stick-table type ip size 200k expire 30m peers lb_replication
+    stick on src
+    tcp-request inspect-delay 5s
+{% for server in domain.servers %}
+    server https_{{ domain.name }}_{{ loop.index }} {{ server }}:443 check
+{% endfor %}
+
+# -- {{ domain.name }} finishes here
+{% endfor %}
+
+
+### admin
+listen stats 0.0.0.0:9999
+    mode http
+    balance
+    timeout client 5000
+    timeout connect 4000
+    timeout server 30000
+    stats uri /
+    stats auth loadbalancer:loadbalancer
