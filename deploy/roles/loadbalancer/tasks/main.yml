@@ -11,6 +11,7 @@
   with_items:
     - update-peers.sh
     - generate-peers.sh
+  notify: update peers
 
 - name: add crontab entry
   cron: minute=*/3 job='/usr/bin/update-peers.sh' name="Update haproxy peer information"
@@ -20,6 +21,7 @@
     dest=/etc/sysconfig/haproxy
     regexp="^OPTIONS=.*"
     line="OPTIONS=-L {{ ansible_ec2_instance_id }} -f /etc/haproxy/peers.cfg"
+  notify: restart rsyslog
 
 - name: make sure haproxy is enabled
   service: name=haproxy state=started enabled=yes

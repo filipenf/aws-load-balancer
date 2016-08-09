@@ -35,6 +35,8 @@ frontend http_frontend
 frontend https_frontend
     bind 0.0.0.0:443
     mode tcp
+    tcp-request content accept if { req_ssl_hello_type 1 }
+    tcp-request inspect-delay 5s
 {% for domain in lb_mappings %}
     acl {{ domain.name }}_acl req.ssl_sni -m reg {{ domain.domain }}
     use_backend {{ domain.name }}_https if {{ domain.name }}_acl
